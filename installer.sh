@@ -3,7 +3,7 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-echo "--- [1/6] Створення користувачів та налаштування безпеки ---"
+echo "--- [1/7] Користувачі та налаштування доступу ---"
 systemctl stop mywebapp.service mywebapp.socket || true
 
 N_NUMBER=23
@@ -11,6 +11,8 @@ N_NUMBER=23
 setup_user() {
     local username=$1
     local is_system=$2
+    local force_expire=$3
+
     if ! id "$username" >/dev/null 2>&1; then
         if [ "$is_system" = "true" ]; then 
             useradd -r -s /usr/sbin/nologin "$username"
@@ -21,18 +23,22 @@ setup_user() {
     
     if [ "$is_system" != "true" ]; then
         echo "$username:12345678" | chpasswd
-        passwd --expire "$username"
+
+        if [ "$force_expire" = "true" ]; then
+            passwd --expire "$username"
+        fi
     fi
 }
 
-setup_user "student" "false"
-setup_user "teacher" "false"
-setup_user "operator" "false"
-setup_user "app" "true"
+setup_user "student" "false" "false" 
+setup_user "teacher" "false" "true"   
+setup_user "operator" "false" "true" 
+setup_user "app" "true" "false"      
 
 echo "$N_NUMBER" > /home/student/gradebook
 chown student:student /home/student/gradebook
 chmod 644 /home/student/gradebook
+chmod 755 /home/student 
 
 cat <<EOF > /etc/sudoers.d/kpi_users
 student ALL=(ALL) NOPASSWD:ALL
@@ -40,13 +46,13 @@ teacher ALL=(ALL) NOPASSWD:ALL
 operator ALL=(ALL) NOPASSWD: /usr/bin/systemctl start mywebapp, /usr/bin/systemctl stop mywebapp, /usr/bin/systemctl restart mywebapp, /usr/bin/systemctl status mywebapp, /usr/bin/systemctl reload nginx
 EOF
 
-echo "--- [2/6] База даних PostgreSQL ---"
+echo "--- [2/7] База даних PostgreSQL ---"
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS inventory;" || true
 sudo -u postgres psql -c "CREATE USER myuser WITH PASSWORD 'mypassword';" || true
 sudo -u postgres psql -c "CREATE DATABASE inventory OWNER myuser;" || true
 sudo -u postgres psql -d inventory -c "GRANT ALL ON SCHEMA public TO myuser;"
 
-echo "--- [3/6] Файли застосунку ---"
+echo "--- [3/7] Файли застосунку ---"
 mkdir -p /opt/mywebapp/src
 
 cat <<'EOF' > /opt/mywebapp/src/migrate.js
@@ -122,11 +128,11 @@ const port = process.env.LISTEN_FDS ? { fd: 3 } : 8000;
 app.listen(port);
 EOF
 
-echo "--- [4/6] Встановлення залежностей ---"
+echo "--- [4/7] Встановлення залежностей ---"
 cd /opt/mywebapp && npm install express pg --no-audit --no-fund
 chown -R app:app /opt/mywebapp
 
-echo "--- [5/6] Systemd: Socket Activation та Міграція перед стартом ---"
+echo "--- [5/7] Systemd: Socket Activation ---"
 cat <<EOF > /etc/systemd/system/mywebapp.service
 [Unit]
 Description=MyWebApp Service
@@ -151,12 +157,11 @@ ListenStream=8000
 WantedBy=sockets.target
 EOF
 
-echo "--- [6/6] Nginx: Reverse Proxy та Логування ---"
+echo "--- [6/7] Nginx ---"
 cat <<EOF > /etc/nginx/sites-available/mywebapp
 server {
     listen 80;
     access_log /var/log/nginx/webapp_access.log;
-
     location = / { proxy_pass http://localhost:8000; }
     location /items { proxy_pass http://localhost:8000; }
     location / { return 404; }
@@ -167,5 +172,13 @@ ln -sf /etc/nginx/sites-available/mywebapp /etc/nginx/sites-enabled/default
 systemctl daemon-reload
 systemctl enable --now mywebapp.socket
 systemctl restart nginx
+
+echo "--- [7/7] Блокування дефолтного користувача ---"
+DEFAULT_USER=$SUDO_USER
+if [ -n "$DEFAULT_USER" ] && [ "$DEFAULT_USER" != "root" ]; then
+    echo "Блокуємо користувача: $DEFAULT_USER"
+    passwd -l "$DEFAULT_USER"
+    gpasswd -d "$DEFAULT_USER" sudo 2>/dev/null || true
+fi
 
 echo "--- ІНСТАЛЯЦІЮ ЗАВЕРШЕНО УСПІШНО ---"
