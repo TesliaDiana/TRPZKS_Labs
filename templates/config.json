@@ -1,0 +1,9 @@
+{
+  "db": {
+    "user": "myuser",
+    "host": "localhost",
+    "database": "inventory",
+    "password": "mypassword",
+    "port": 5432
+  }
+}

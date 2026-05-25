@@ -1,0 +1,12 @@
+{
+  "name": "mywebapp",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1"
+  }
+}

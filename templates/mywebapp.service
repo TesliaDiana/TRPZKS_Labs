@@ -1,0 +1,15 @@
+[Unit]
+Description=My Web App Service
+Requires=mywebapp.socket
+After=network.target postgresql.service
+
+[Service]
+User=app
+Group=app
+WorkingDirectory=/opt/mywebapp
+Environment=APP_CONFIG=/etc/mywebapp/config.json
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
