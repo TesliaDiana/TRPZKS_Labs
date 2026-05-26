@@ -16,6 +16,7 @@ async function runMigrations() {
                 quantity INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
         `);
         console.log("Migrations completed.");
     } finally {

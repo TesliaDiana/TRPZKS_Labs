@@ -1,33 +1,19 @@
 const express = require('express');
-const { Pool } = require('pg');
+const { pool } = require('./database');
 
 const app = express();
-const pool = new Pool({
-    user: 'myuser',
-    host: 'localhost',
-    database: 'inventory',
-    password: 'mypassword',
-    port: 5432
-});
 
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.setHeader('Content-Type', 'text/html');
-    const html = `
-        <html>
-            <body style="font-family: sans-serif; line-height: 1.6; padding: 20px;">
-                <h1>Inventory API Entry Point</h1>
-                <p>Доступні маршрути:</p>
-                <ul>
-                    <li><a href="/items">GET /items</a> - Список предметів (HTML/JSON)</li>
-                    <li>GET /items/:id - Пошук конкретного предмета</li>
-                </ul>
-                <hr>
-                <p>Статус: <a href="/health/alive">Alive</a> | <a href="/health/ready">Ready</a></p>
-            </body>
-        </html>`;
-    res.send(html + '\n');
+    res.json({
+        message: "Inventory API Entry Point",
+        endpoints: {
+            items: "/items",
+            health_alive: "/health/alive",
+            health_ready: "/health/ready"
+        }
+    });
 });
 
 app.get('/health/alive', (req, res) => res.status(200).send('OK\n'));
@@ -76,9 +62,14 @@ app.get('/items/:id', async (req, res) => {
 app.post('/items', async (req, res) => {
     try {
         const { name, quantity } = req.body;
+
+        if (!name || name.trim().length === 0) {
+            return res.status(400).send('Error: Name cannot be empty or consist only of spaces\n');
+        }
+
         const result = await pool.query(
             'INSERT INTO items (name, quantity) VALUES ($1, $2) RETURNING *',
-            [name, quantity || 0]
+            [name.trim(), quantity || 0]
         );
         res.status(201).setHeader('Content-Type', 'application/json');
         res.send(JSON.stringify(result.rows[0], null, 2) + '\n');
