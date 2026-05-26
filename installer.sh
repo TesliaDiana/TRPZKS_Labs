@@ -1,9 +1,13 @@
 if [ "$(id -u)" -ne 0 ]; then 
-  echo "Помилка: Запускайте від root (через sudo)!"
+  echo "Помилка: Запускайте від root (sudo)!"
   exit 1
 fi
 
-echo "--- [1/7] Користувачі та налаштування доступу ---"
+echo "--- [0/7] Встановлення системних пакетів (Node, Postgres, Nginx) ---"
+apt update
+apt install -y nodejs npm postgresql nginx curl
+
+echo "--- [1/7] Створення користувачів та налаштування прав ---"
 systemctl stop mywebapp.service mywebapp.socket || true
 
 N_NUMBER=23
@@ -17,23 +21,26 @@ setup_user() {
         if [ "$is_system" = "true" ]; then 
             useradd -r -s /usr/sbin/nologin "$username"
         else
-            useradd -m -s /bin/bash "$username"
+            if [ "$username" = "operator" ]; then
+                useradd -m -g operator -s /bin/bash "$username" || useradd -m -s /bin/bash "$username"
+            else
+                useradd -m -s /bin/bash "$username"
+            fi
         fi
     fi
     
     if [ "$is_system" != "true" ]; then
         echo "$username:12345678" | chpasswd
-
         if [ "$force_expire" = "true" ]; then
             passwd --expire "$username"
         fi
     fi
 }
 
-setup_user "student" "false" "false" 
-setup_user "teacher" "false" "true"   
+setup_user "student" "false" "false"
+setup_user "teacher" "false" "true"  
 setup_user "operator" "false" "true" 
-setup_user "app" "true" "false"      
+setup_user "app" "true" "false"     
 
 echo "$N_NUMBER" > /home/student/gradebook
 chown student:student /home/student/gradebook
@@ -46,14 +53,73 @@ teacher ALL=(ALL) NOPASSWD:ALL
 operator ALL=(ALL) NOPASSWD: /usr/bin/systemctl start mywebapp, /usr/bin/systemctl stop mywebapp, /usr/bin/systemctl restart mywebapp, /usr/bin/systemctl status mywebapp, /usr/bin/systemctl reload nginx
 EOF
 
-echo "--- [2/7] База даних PostgreSQL ---"
+echo "--- [2/7] Налаштування бази даних PostgreSQL ---"
+systemctl start postgresql
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS inventory;" || true
 sudo -u postgres psql -c "CREATE USER myuser WITH PASSWORD 'mypassword';" || true
 sudo -u postgres psql -c "CREATE DATABASE inventory OWNER myuser;" || true
 sudo -u postgres psql -d inventory -c "GRANT ALL ON SCHEMA public TO myuser;"
 
-echo "--- [3/7] Файли застосунку ---"
+echo "--- [3/7] Створення файлів застосунку ---"
 mkdir -p /opt/mywebapp/src
+
+cat <<'EOF' > /opt/mywebapp/src/server.js
+const express = require('express');
+const { Pool } = require('pg');
+const app = express();
+const pool = new Pool({user:'myuser',host:'localhost',database:'inventory',password:'mypassword',port:5432});
+app.use(express.json());
+
+app.get('/', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`
+        <html><body style="font-family:sans-serif; padding:20px;">
+            <h1>KPI Inventory API</h1>
+            <ul><li><a href="/items">Переглянути предмети</a></li></ul>
+            <hr><p>Статус: <a href="/health/alive">Alive</a> | <a href="/health/ready">Ready</a></p>
+        </body></html>\n`);
+});
+
+app.get('/items', async (req, res) => {
+    try {
+        const r = await pool.query('SELECT * FROM items ORDER BY id ASC');
+        if (req.headers.accept && req.headers.accept.includes('text/html')) {
+            let t = '<html><body><h2>Inventory</h2><table border="1"><tr><th>ID</th><th>Назва</th><th>К-сть</th></tr>';
+            r.rows.forEach(i => t += `<tr><td>${i.id}</td><td>${i.name}</td><td>${i.quantity}</td></tr>`);
+            return res.send(t + '</table><br><a href="/">Назад</a></body></html>\n');
+        }
+        res.json(r.rows);
+    } catch (e) { res.status(500).send(e.message); }
+});
+
+app.get('/items/:id', async (req, res) => {
+    try {
+        const r = await pool.query('SELECT * FROM items WHERE id = $1', [req.params.id]);
+        if (r.rows.length === 0) return res.status(404).send('Not Found\n');
+        res.json(r.rows[0]);
+    } catch (e) { res.status(500).send(e.message); }
+});
+
+app.post('/items', async (req, res) => {
+    try {
+        const { name, quantity } = req.body;
+
+        if (!name || name.trim().length === 0) {
+            return res.status(400).json({ error: "Name cannot be empty or just spaces" });
+        }
+        const r = await pool.query('INSERT INTO items (name, quantity) VALUES ($1, $2) RETURNING *', [name.trim(), quantity || 0]);
+        res.status(201).json(r.rows[0]);
+    } catch (e) { res.status(500).send(e.message); }
+});
+
+app.get('/health/alive', (req, res) => res.status(200).send('OK\n'));
+app.get('/health/ready', async (req, res) => {
+    try { await pool.query('SELECT 1'); res.send('OK\n'); } catch (e) { res.status(500).send('DB ERR\n'); }
+});
+
+const port = process.env.LISTEN_FDS ? { fd: 3 } : 8000;
+app.listen(port, () => console.log('Server started'));
+EOF
 
 cat <<'EOF' > /opt/mywebapp/src/migrate.js
 const { Pool } = require('pg');
@@ -76,59 +142,7 @@ async function migrate() {
 migrate();
 EOF
 
-cat <<'EOF' > /opt/mywebapp/src/server.js
-const express = require('express');
-const { Pool } = require('pg');
-const app = express();
-const pool = new Pool({user:'myuser',host:'localhost',database:'inventory',password:'mypassword',port:5432});
-app.use(express.json());
-
-app.get('/', (req, res) => {
-    res.setHeader('Content-Type', 'text/html');
-    res.send('<html><body><h1>KPI Inventory API</h1><ul><li><a href="/items">Items</a></li></ul></body></html>\n');
-});
-
-app.get('/items', async (req, res) => {
-    try {
-        const r = await pool.query('SELECT name, quantity FROM items ORDER BY id ASC');
-        if (req.headers.accept && req.headers.accept.includes('text/html')) {
-            let t = '<html><body><table border="1"><tr><th>Назва</th><th>К-сть</th></tr>';
-            r.rows.forEach(i => t += `<tr><td>${i.name}</td><td>${i.quantity}</td></tr>`);
-            return res.send(t + '</table></body></html>\n');
-        }
-        res.setHeader('Content-Type', 'application/json');
-        res.send(JSON.stringify(r.rows, null, 2) + '\n');
-    } catch (e) { res.status(500).send(e.message + '\n'); }
-});
-
-app.get('/items/:id', async (req, res) => {
-    try {
-        const r = await pool.query('SELECT * FROM items WHERE id = $1', [req.params.id]);
-        if (r.rows.length === 0) return res.status(404).send('Not Found\n');
-        res.setHeader('Content-Type', 'application/json');
-        res.send(JSON.stringify(r.rows[0], null, 2) + '\n');
-    } catch (e) { res.status(500).send(e.message + '\n'); }
-});
-
-app.post('/items', async (req, res) => {
-    try {
-        const { name, quantity } = req.body;
-        const r = await pool.query('INSERT INTO items (name, quantity) VALUES ($1, $2) RETURNING *', [name, quantity]);
-        res.status(201).setHeader('Content-Type', 'application/json');
-        res.send(JSON.stringify(r.rows[0], null, 2) + '\n');
-    } catch (e) { res.status(500).send(e.message + '\n'); }
-});
-
-app.get('/health/alive', (req, res) => res.status(200).send('OK\n'));
-app.get('/health/ready', async (req, res) => {
-    try { await pool.query('SELECT 1'); res.send('OK\n'); } catch (e) { res.status(500).send('ERR\n'); }
-});
-
-const port = process.env.LISTEN_FDS ? { fd: 3 } : 8000;
-app.listen(port);
-EOF
-
-echo "--- [4/7] Встановлення залежностей ---"
+echo "--- [4/7] Встановлення залежностей застосунку ---"
 cd /opt/mywebapp && npm install express pg --no-audit --no-fund
 chown -R app:app /opt/mywebapp
 
@@ -157,14 +171,15 @@ ListenStream=8000
 WantedBy=sockets.target
 EOF
 
-echo "--- [6/7] Nginx ---"
+echo "--- [6/7] Nginx Конфігурація ---"
 cat <<EOF > /etc/nginx/sites-available/mywebapp
 server {
     listen 80;
     access_log /var/log/nginx/webapp_access.log;
-    location = / { proxy_pass http://localhost:8000; }
-    location /items { proxy_pass http://localhost:8000; }
-    location / { return 404; }
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host \$host;
+    }
 }
 EOF
 ln -sf /etc/nginx/sites-available/mywebapp /etc/nginx/sites-enabled/default
@@ -174,11 +189,14 @@ systemctl enable --now mywebapp.socket
 systemctl restart nginx
 
 echo "--- [7/7] Блокування дефолтного користувача ---"
-DEFAULT_USER=$SUDO_USER
-if [ -n "$DEFAULT_USER" ] && [ "$DEFAULT_USER" != "root" ]; then
-    echo "Блокуємо користувача: $DEFAULT_USER"
-    passwd -l "$DEFAULT_USER"
-    gpasswd -d "$DEFAULT_USER" sudo 2>/dev/null || true
+
+if id "student" >/dev/null 2>&1; then
+    DEFAULT_USER=$SUDO_USER
+    if [ -n "$DEFAULT_USER" ] && [ "$DEFAULT_USER" != "root" ]; then
+        echo "Блокуємо $DEFAULT_USER..."
+        passwd -l "$DEFAULT_USER"
+        gpasswd -d "$DEFAULT_USER" sudo 2>/dev/null || true
+    fi
 fi
 
-echo "--- ІНСТАЛЯЦІЮ ЗАВЕРШЕНО УСПІШНО ---"
+echo "--- ІНСТАЛЯЦІЮ ЗАВЕРШЕНО ---"
