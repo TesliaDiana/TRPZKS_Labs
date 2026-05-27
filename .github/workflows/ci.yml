@@ -2,23 +2,24 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ lab1 ]
   pull_request:
-    branches: [ main ]
-
-services:
-  postgres:
-    image: postgres:15
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: testdb
-    ports:
-      - 5432:5432
+    branches: [ lab1 ]
 
 jobs:
+
   test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
 
     steps:
       - uses: actions/checkout@v4
@@ -37,21 +38,24 @@ jobs:
       - name: Test
         run: npm test -- --coverage
 
-docker:
-  needs: test
-  runs-on: ubuntu-latest
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
 
-  steps:
-    - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Login to GHCR
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-    - name: Build image
-      run: docker build -t ghcr.io/TesliaDiana/mywebapp:latest .
+      - name: Build image
+        run: docker build -t ghcr.io/TesliaDiana/mywebapp:latest .
 
-    - name: Push image
-      run: docker push ghcr.io/TesliaDiana/mywebapp:latest
+      - name: Push image
+        run: docker push ghcr.io/TesliaDiana/mywebapp:latest
 
   deploy:
     needs: docker
