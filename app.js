@@ -22,8 +22,8 @@ app.get('/health/ready', async (req, res) => {
     try {
         await pool.query('SELECT 1');
         res.status(200).send('OK\n');
-    } catch (e) {
-        res.status(500).send('Database not connected\n');
+    } catch (err) {
+        res.status(500).send(err.message + '\n' + 'Database not connected\n');
     }
 });
 
