@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1779897259995" clover="3.2.0">
-  <project timestamp="1779897259996" name="All files">
-    <metrics statements="50" coveredstatements="38" conditionals="20" coveredconditionals="11" methods="7" coveredmethods="6" elements="77" coveredelements="55" complexity="0" loc="50" ncloc="50" packages="2" files="2" classes="2"/>
+<coverage generated="1779905740040" clover="3.2.0">
+  <project timestamp="1779905740040" name="All files">
+    <metrics statements="54" coveredstatements="38" conditionals="24" coveredconditionals="13" methods="7" coveredmethods="6" elements="85" coveredelements="57" complexity="0" loc="54" ncloc="54" packages="2" files="2" classes="2"/>
     <package name="TRPZKS_Labs">
-      <metrics statements="35" coveredstatements="28" conditionals="8" coveredconditionals="5" methods="6" coveredmethods="5"/>
+      <metrics statements="39" coveredstatements="28" conditionals="8" coveredconditionals="5" methods="6" coveredmethods="5"/>
       <file name="app.js" path="C:\Users\Dominola\Documents\TRPZKS_Labs\app.js">
-        <metrics statements="35" coveredstatements="28" conditionals="8" coveredconditionals="5" methods="6" coveredmethods="5"/>
+        <metrics statements="39" coveredstatements="28" conditionals="8" coveredconditionals="5" methods="6" coveredmethods="5"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
@@ -19,49 +19,53 @@
         <line num="24" count="1" type="stmt"/>
         <line num="25" count="1" type="stmt"/>
         <line num="27" count="0" type="stmt"/>
-        <line num="31" count="1" type="stmt"/>
+        <line num="28" count="0" type="stmt"/>
         <line num="32" count="1" type="stmt"/>
         <line num="33" count="1" type="stmt"/>
-        <line num="37" count="1" type="stmt"/>
-        <line num="39" count="0" type="stmt"/>
-        <line num="43" count="1" type="stmt"/>
-        <line num="44" count="1" type="stmt"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="40" count="0" type="stmt"/>
+        <line num="41" count="0" type="stmt"/>
         <line num="45" count="1" type="stmt"/>
+        <line num="46" count="1" type="stmt"/>
         <line num="47" count="1" type="stmt"/>
-        <line num="52" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="53" count="0" type="stmt"/>
-        <line num="56" count="1" type="stmt"/>
-        <line num="58" count="0" type="stmt"/>
-        <line num="62" count="1" type="stmt"/>
-        <line num="63" count="1" type="stmt"/>
-        <line num="64" count="1" type="stmt"/>
-        <line num="66" count="1" type="cond" truecount="3" falsecount="1"/>
-        <line num="67" count="0" type="stmt"/>
-        <line num="70" count="1" type="stmt"/>
-        <line num="75" count="1" type="stmt"/>
-        <line num="77" count="0" type="stmt"/>
-        <line num="81" count="1" type="stmt"/>
+        <line num="49" count="1" type="stmt"/>
+        <line num="54" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="55" count="0" type="stmt"/>
+        <line num="58" count="1" type="stmt"/>
+        <line num="60" count="0" type="stmt"/>
+        <line num="61" count="0" type="stmt"/>
+        <line num="65" count="1" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="69" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="70" count="0" type="stmt"/>
+        <line num="73" count="1" type="stmt"/>
+        <line num="78" count="1" type="stmt"/>
+        <line num="80" count="0" type="stmt"/>
+        <line num="81" count="0" type="stmt"/>
+        <line num="85" count="1" type="stmt"/>
       </file>
     </package>
     <package name="TRPZKS_Labs.src">
-      <metrics statements="15" coveredstatements="10" conditionals="12" coveredconditionals="6" methods="1" coveredmethods="1"/>
+      <metrics statements="15" coveredstatements="10" conditionals="16" coveredconditionals="8" methods="1" coveredmethods="1"/>
       <file name="database.js" path="C:\Users\Dominola\Documents\TRPZKS_Labs\src\database.js">
-        <metrics statements="15" coveredstatements="10" conditionals="12" coveredconditionals="6" methods="1" coveredmethods="1"/>
+        <metrics statements="15" coveredstatements="10" conditionals="16" coveredconditionals="8" methods="1" coveredmethods="1"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
         <line num="12" count="1" type="stmt"/>
-        <line num="16" count="1" type="stmt"/>
-        <line num="17" count="1" type="stmt"/>
         <line num="18" count="1" type="stmt"/>
-        <line num="25" count="1" type="stmt"/>
-        <line num="27" count="0" type="stmt"/>
-        <line num="28" count="0" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
         <line num="29" count="0" type="stmt"/>
         <line num="30" count="0" type="stmt"/>
         <line num="31" count="0" type="stmt"/>
-        <line num="33" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="37" count="1" type="stmt"/>
+        <line num="32" count="0" type="stmt"/>
+        <line num="33" count="0" type="stmt"/>
+        <line num="35" count="1" type="cond" truecount="1" falsecount="1"/>
+        <line num="39" count="1" type="stmt"/>
       </file>
     </package>
   </project>

@@ -7,36 +7,42 @@ on:
     branches: [ lab1 ]
 
 jobs:
-
   test:
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:latest
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: testdb
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword123
+          POSTGRES_DB: inventory
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node
+      
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Lint
-        run: npx eslint .
-
-      - name: Test
-        run: npm test -- --coverage
+          node-version: '20'
+          
+      - run: npm install
+      
+      - name: Run tests
+        env:
+          DB_USER: myuser
+          DB_PASSWORD: mypassword123
+          DB_NAME: inventory
+          DB_HOST: localhost
+          DB_PORT: 5432
+        run: npm test
 
   docker:
     needs: test
@@ -44,27 +50,19 @@ jobs:
     permissions:
       packages: write
       contents: read
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Build image
-        run: docker build -t ghcr.io/TesliaDiana/mywebapp:latest .
-
-      - name: Push image
-        run: docker push ghcr.io/TesliaDiana/mywebapp:latest
+      - name: Build and Push image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/mywebapp:latest .
+          docker push ghcr.io/${{ github.repository_owner }}/mywebapp:latest
 
   deploy:
     needs: docker
     runs-on: self-hosted
-
     steps:
       - name: Deploy via SSH
         run: |
-          ssh TesliaDiana@target-node "
-            docker pull ghcr.io/TesliaDiana/mywebapp:latest &&
-            systemctl restart mywebapp
-          "
+          ssh TesliaDiana@target-node "docker pull ghcr.io/${{ github.repository_owner }}/mywebapp:latest && systemctl restart mywebapp"

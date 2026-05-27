@@ -25,7 +25,7 @@ app.get('/health/ready', async (req, res) => {
     res.status(200).send('OK');
   } catch (err) {
     res.status(500).send('DB not ready');
-    console.error(err.message);
+    console.error(err);
   }
 });
 
@@ -38,6 +38,7 @@ app.get('/items', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     res.status(500).send(err.message);
+    console.error(err);
   }
 });
 
@@ -57,6 +58,7 @@ app.get('/items/:id', async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).send(err.message);
+    console.error(err);
   }
 });
 
@@ -76,6 +78,7 @@ app.post('/items', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).send(err.message);
+    console.error(err);
   }
 });
 

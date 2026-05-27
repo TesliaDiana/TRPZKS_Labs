@@ -18,11 +18,11 @@ async function runMigrations() {
   try {
     client = await pool.connect();
     await client.query(`
-      CREATE TABLE IF NOT EXISTS items (
+    CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
-        description TEXT
-      );
+        quantity INTEGER NOT NULL DEFAULT 0
+    );
     `);
     console.log("✔ База даних готова");
   } catch (err) {
