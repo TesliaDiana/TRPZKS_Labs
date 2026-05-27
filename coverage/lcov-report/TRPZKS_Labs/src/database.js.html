@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">68.75% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/14</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">91.66% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>11/12</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>11/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">50% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>6/12</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>1/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">66.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/14</span>
+                <span class='fraction'>10/15</span>
             </div>
         
             
@@ -99,8 +99,7 @@
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a>
 <a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -112,66 +111,64 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span></td><td class="text"><pre class="prettyprint lang-js">const { Pool } = require('pg');
-const fs = require('fs');
+require('dotenv').config();
 &nbsp;
-let dbConfig = {
-    user: process.env.DB_USER || 'myuser',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'inventory',
-    password: process.env.DB_PASSWORD || 'mypassword',
-    port: 5432
-};
+const pool = new Pool({
+  user: process.env.DB_USER ? process.env.DB_USER.trim() : <span class="branch-1 cbranch-no" title="branch not covered" >'myuser',</span>
+  host: process.env.DB_HOST ? process.env.DB_HOST.trim() : <span class="branch-1 cbranch-no" title="branch not covered" >'127.0.0.1',</span>
+  database: process.env.DB_NAME ? process.env.DB_NAME.trim() : <span class="branch-1 cbranch-no" title="branch not covered" >'inventory',</span>
+  password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD).trim() : <span class="branch-1 cbranch-no" title="branch not covered" >'mypassword123',</span>
+  port: parseInt(process.env.DB_PORT || <span class="branch-1 cbranch-no" title="branch not covered" >'5432',</span> 10),
+});
 &nbsp;
-const CONFIG_PATH = process.env.APP_CONFIG || './templates/config.json';
-<span class="missing-if-branch" title="if path not taken" >I</span>if (fs.existsSync(CONFIG_PATH)) {
-    const fileConfig = <span class="cstat-no" title="statement not covered" >JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));</span>
-<span class="cstat-no" title="statement not covered" >    dbConfig = { ...dbConfig, ...fileConfig.db };</span>
-}
+console.log(`DEBUG: Final check - User: "${process.env.DB_USER.trim()}", Port: ${process.env.DB_PORT}`);
 &nbsp;
-const pool = new Pool(dbConfig);
-&nbsp;
-async function <span class="fstat-no" title="function not covered" >runMigrations(</span>) {
-    const client = <span class="cstat-no" title="statement not covered" >await pool.connect();</span>
-<span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >        await client.query(`</span>
-            CREATE TABLE IF NOT EXISTS items (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                quantity INTEGER NOT NULL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
-        `);
-<span class="cstat-no" title="statement not covered" >        console.log("Migrations completed.");</span>
-    } finally {
-<span class="cstat-no" title="statement not covered" >        client.release();</span>
-    }
+async function runMigrations() {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT
+      );
+    `);
+    console.log("✔ База даних готова");
+  } catch (err) {
+<span class="cstat-no" title="statement not covered" >    console.error("❌ ДЕТАЛІ ПОМИЛКИ:");</span>
+<span class="cstat-no" title="statement not covered" >    console.error(`Host: ${pool.options.host}`);</span>
+<span class="cstat-no" title="statement not covered" >    console.error(`Database: ${pool.options.database}`);</span>
+<span class="cstat-no" title="statement not covered" >    console.error(`Message: ${err.message}`);</span>
+<span class="cstat-no" title="statement not covered" >    throw err;</span>
+  } finally {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (client) client.release();
+  }
 }
 &nbsp;
 module.exports = { pool, runMigrations };</pre></td></tr></table></pre>
@@ -181,7 +178,7 @@ module.exports = { pool, runMigrations };</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-27T11:56:46.943Z
+                at 2026-05-27T15:54:19.960Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

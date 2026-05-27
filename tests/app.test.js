@@ -1,53 +1,54 @@
 const request = require('supertest');
 const { app, pool } = require('../app');
+const { runMigrations } = require('../src/database');
 
 describe('Inventory API', () => {
 
-    afterAll(async () => {
-        await pool.end();
-    });
+  beforeAll(async () => {
 
-    test('GET /health/alive should return OK', async () => {
-        const res = await request(app).get('/health/alive');
-        expect(res.statusCode).toBe(200);
-        expect(res.text).toContain('OK');
-    });
+    await runMigrations();
+  });
 
-    test('GET /health/ready should return OK when DB is connected', async () => {
-        const res = await request(app).get('/health/ready');
-        expect([200, 500]).toContain(res.statusCode);
-    });
+  afterAll(async () => {
+    await pool.end();
+  });
 
-    test('GET /items should return array', async () => {
-        const res = await request(app).get('/items');
+  test('GET /health/alive should return OK', async () => {
+    const res = await request(app).get('/health/alive');
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toContain('OK');
+  });
 
-        expect(res.statusCode).toBe(200);
+  test('GET /health/ready should return OK when DB is connected', async () => {
+    const res = await request(app).get('/health/ready');
+    expect(res.statusCode).toBe(200);
+  });
 
-        expect(res.text).toBeDefined();
-    });
+  test('GET /items should return array', async () => {
+    const res = await request(app).get('/items');
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
 
-    let createdItemId;
+  let createdItemId;
 
-    test('POST /items should create item', async () => {
-        const res = await request(app)
-            .post('/items')
-            .send({
-                name: 'Test Item',
-                quantity: 5
-            });
+  test('POST /items should create item', async () => {
+    const res = await request(app)
+      .post('/items')
+      .send({
+        name: 'Test Item',
+        quantity: 5
+      });
 
-        expect(res.statusCode).toBe(201);
-        expect(res.body.name).toBe('Test Item');
-        expect(res.body.quantity).toBe(5);
+    expect(res.statusCode).toBe(201);
+    expect(res.body.name).toBe('Test Item');
+    expect(res.body.quantity).toBe(5);
+    createdItemId = res.body.id;
+  });
 
-        createdItemId = res.body.id;
-    });
-
-    test('GET /items/:id should return item', async () => {
-        const res = await request(app).get(`/items/${createdItemId}`);
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body.id).toBe(createdItemId);
-    });
-
+  test('GET /items/:id should return item', async () => {
+    const res = await request(app).get(`/items/${createdItemId}`);
+    expect(res.statusCode).toBe(200);
+    expect(res.body.id).toBe(createdItemId);
+  });
 });

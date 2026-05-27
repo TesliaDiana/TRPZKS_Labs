@@ -1,38 +1,37 @@
 const { Pool } = require('pg');
-const fs = require('fs');
+require('dotenv').config();
 
-let dbConfig = {
-    user: process.env.DB_USER || 'myuser',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'inventory',
-    password: process.env.DB_PASSWORD || 'mypassword',
-    port: 5432
-};
+const pool = new Pool({
+  user: process.env.DB_USER ? process.env.DB_USER.trim() : 'myuser',
+  host: process.env.DB_HOST ? process.env.DB_HOST.trim() : '127.0.0.1',
+  database: process.env.DB_NAME ? process.env.DB_NAME.trim() : 'inventory',
+  password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD).trim() : 'mypassword123',
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+});
 
-const CONFIG_PATH = process.env.APP_CONFIG || './templates/config.json';
-if (fs.existsSync(CONFIG_PATH)) {
-    const fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-    dbConfig = { ...dbConfig, ...fileConfig.db };
-}
-
-const pool = new Pool(dbConfig);
+console.log(`DEBUG: Final check - User: "${process.env.DB_USER.trim()}", Port: ${process.env.DB_PORT}`);
 
 async function runMigrations() {
-    const client = await pool.connect();
-    try {
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS items (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                quantity INTEGER NOT NULL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
-        `);
-        console.log("Migrations completed.");
-    } finally {
-        client.release();
-    }
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT
+      );
+    `);
+    console.log("✔ База даних готова");
+  } catch (err) {
+    console.error("❌ ДЕТАЛІ ПОМИЛКИ:");
+    console.error(`Host: ${pool.options.host}`);
+    console.error(`Database: ${pool.options.database}`);
+    console.error(`Message: ${err.message}`);
+    throw err;
+  } finally {
+    if (client) client.release();
+  }
 }
 
 module.exports = { pool, runMigrations };
