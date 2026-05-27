@@ -9,7 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:latest
@@ -27,14 +26,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          
+          node-version: '20' 
       - run: npm install
-      
       - name: Run tests
         env:
           DB_USER: myuser
@@ -54,15 +50,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build and Push image
-        run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/mywebapp:latest .
-          docker push ghcr.io/${{ github.repository_owner }}/mywebapp:latest
-
+      - name: Build image
+        run: docker build -t ghcr.io/tesliadiana/mywebapp:latest .
+      - name: Push image
+        run: docker push ghcr.io/tesliadiana/mywebapp:latest
+        
   deploy:
     needs: docker
     runs-on: self-hosted
     steps:
       - name: Deploy via SSH
         run: |
-          ssh TesliaDiana@target-node "docker pull ghcr.io/${{ github.repository_owner }}/mywebapp:latest && systemctl restart mywebapp"
+          ssh TesliaDiana@target-node "
+            docker pull ghcr.io/tesliadiana/mywebapp:latest &&
+            systemctl restart mywebapp
+          "
