@@ -65,4 +65,11 @@ jobs:
           docker pull ghcr.io/tesliadiana/mywebapp:latest
           docker stop mywebapp || true
           docker rm mywebapp || true
-          docker run -d --name mywebapp -p 8000:8000 ghcr.io/tesliadiana/mywebapp:latest
+          docker run -d --name mywebapp \
+            --network host \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=5432 \
+            -e DB_USER=myuser \
+            -e DB_PASSWORD=mypassword123 \
+            -e DB_NAME=inventory \
+            ghcr.io/tesliadiana/mywebapp:latest
