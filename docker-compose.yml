@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # 1. База даних
   db:
     image: postgres:15-alpine
     container_name: inventory-db
@@ -11,11 +10,10 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: inventory
     volumes:
-      - pgdata:/var/lib/postgresql/data  # Дані збережуться на диску
+      - pgdata:/var/lib/postgresql/data 
     networks:
       - custom-network
 
-  # 2. Твій застосунок
   app:
     build: .
     container_name: inventory-app
@@ -23,7 +21,6 @@ services:
     depends_on:
       - db
     environment:
-      # Вказуємо параметри підключення (хост - це ім'я сервісу 'db')
       DB_HOST: db
       DB_USER: myuser
       DB_PASSWORD: mypassword
@@ -31,7 +28,6 @@ services:
     networks:
       - custom-network
 
-  # 3. Проксі-сервер
   nginx:
     image: nginx:alpine
     container_name: inventory-proxy
@@ -45,11 +41,9 @@ services:
     networks:
       - custom-network
 
-# Окрема мережа для сервісів
 networks:
   custom-network:
     driver: bridge
 
-# Опис тому (Volume) для бази даних
 volumes:
   pgdata:
