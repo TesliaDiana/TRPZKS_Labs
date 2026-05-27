@@ -670,12 +670,6 @@ sudo docker network inspect mywebapp_custom-network
 curl http://localhost
 ```
 
-або:
-
-```bash
-curl http://localhost:8080
-```
-
 ---
 
 ## 4. Перевірка роботи бізнес-логіки
