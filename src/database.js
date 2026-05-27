@@ -9,7 +9,9 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || '5432', 10),
 });
 
-console.log(`DEBUG: Final check - User: "${process.env.DB_USER.trim()}", Port: ${process.env.DB_PORT}`);
+console.log(
+  `DEBUG: Final check - User: "${process.env.DB_USER || 'undefined'}", Port: ${process.env.DB_PORT || 'undefined'}`
+);
 
 async function runMigrations() {
   let client;
