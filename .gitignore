@@ -4,3 +4,5 @@ npm-debug.log
 dist
 build
 .example
+gh_actions_key
+gh_actions_key.pub

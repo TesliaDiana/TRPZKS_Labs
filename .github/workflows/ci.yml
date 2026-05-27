@@ -54,14 +54,15 @@ jobs:
         run: docker build -t ghcr.io/tesliadiana/mywebapp:latest .
       - name: Push image
         run: docker push ghcr.io/tesliadiana/mywebapp:latest
-        
-  deploy:
+  
+deploy:
     needs: docker
     runs-on: self-hosted
     steps:
-      - name: Deploy via SSH
+      - name: Deploy Container
         run: |
-          ssh TesliaDiana@target-node "
-            docker pull ghcr.io/tesliadiana/mywebapp:latest &&
-            systemctl restart mywebapp
-          "
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ghcr.io/tesliadiana/mywebapp:latest
+          docker stop mywebapp || true
+          docker rm mywebapp || true
+          docker run -d --name mywebapp -p 8000:8000 ghcr.io/tesliadiana/mywebapp:latest
