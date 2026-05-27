@@ -55,7 +55,7 @@ jobs:
       - name: Push image
         run: docker push ghcr.io/tesliadiana/mywebapp:latest
   
-deploy:
+  deploy:
     needs: docker
     runs-on: self-hosted
     steps:
