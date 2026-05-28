@@ -1,11 +1,12 @@
+---
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ lab1 ]
-    tags: [ 'v*' ]
+    branches: [lab1]
+    tags: ['v*']
   pull_request:
-    branches: [ lab1 ]
+    branches: [lab1]
 
 jobs:
   lint:
@@ -42,15 +43,13 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' 
+          node-version: '20'
       - run: npm install
-      
       - name: Run tests with coverage
         env:
           DB_USER: myuser
@@ -59,7 +58,6 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
         run: npm test -- --coverage --coverageThreshold='{"global":{"lines":40}}'
-
       - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
@@ -76,17 +74,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+          docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build and Push image
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/mywebapp
           SHA_TAG=sha-${{ github.sha }}
-          
           docker build -t $IMAGE_ID:latest -t $IMAGE_ID:$SHA_TAG .
           docker push $IMAGE_ID:latest
           docker push $IMAGE_ID:$SHA_TAG
-          
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_NAME=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
             docker tag $IMAGE_ID:latest $IMAGE_ID:stable
@@ -94,7 +91,7 @@ jobs:
             docker push $IMAGE_ID:stable
             docker push $IMAGE_ID:$TAG_NAME
           fi
-  
+
   deploy:
     needs: docker
     if: github.event_name == 'push'
@@ -102,7 +99,8 @@ jobs:
     steps:
       - name: Deploy Container
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+          docker login ghcr.io -u ${{ github.actor }} --password-stdin
           docker pull ghcr.io/tesliadiana/mywebapp:latest
           docker stop mywebapp || true
           docker rm mywebapp || true
@@ -114,13 +112,10 @@ jobs:
             -e DB_PASSWORD=mypassword123 \
             -e DB_NAME=inventory \
             ghcr.io/tesliadiana/mywebapp:latest
-
       - name: Verify Deployment
         run: |
-          echo "Waiting for service to wake up..."
+          echo "Waiting for service..."
           sleep 15
-          echo "Testing Application endpoint..."
           curl --fail http://localhost:8000 || exit 1
-          echo "Testing Nginx proxy..."
           curl --fail http://localhost:80 || exit 1
-          echo "Deployment verified successfully!"
+          echo "Success!"
