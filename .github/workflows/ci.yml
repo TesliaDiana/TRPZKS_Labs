@@ -1,13 +1,32 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [ lab1 ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ lab1 ]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm install
+      - name: Run ESLint
+        run: npm run lint
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+      - name: YAML Lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .github/workflows/
+
   test:
+    needs: lint
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -31,14 +50,22 @@ jobs:
         with:
           node-version: '20' 
       - run: npm install
-      - name: Run tests
+      
+      - name: Run tests with coverage
         env:
           DB_USER: myuser
           DB_PASSWORD: mypassword123
           DB_NAME: inventory
           DB_HOST: localhost
           DB_PORT: 5432
-        run: npm test
+        run: npm test -- --coverage --coverageThreshold='{"global":{"lines":40}}'
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: coverage/
 
   docker:
     needs: test
@@ -50,13 +77,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build image
-        run: docker build -t ghcr.io/tesliadiana/mywebapp:latest .
-      - name: Push image
-        run: docker push ghcr.io/tesliadiana/mywebapp:latest
+      
+      - name: Build and Push image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/mywebapp
+          SHA_TAG=sha-${{ github.sha }}
+          
+          docker build -t $IMAGE_ID:latest -t $IMAGE_ID:$SHA_TAG .
+          docker push $IMAGE_ID:latest
+          docker push $IMAGE_ID:$SHA_TAG
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+            docker tag $IMAGE_ID:latest $IMAGE_ID:stable
+            docker tag $IMAGE_ID:latest $IMAGE_ID:$TAG_NAME
+            docker push $IMAGE_ID:stable
+            docker push $IMAGE_ID:$TAG_NAME
+          fi
   
   deploy:
     needs: docker
+    if: github.event_name == 'push'
     runs-on: self-hosted
     steps:
       - name: Deploy Container
@@ -73,3 +114,13 @@ jobs:
             -e DB_PASSWORD=mypassword123 \
             -e DB_NAME=inventory \
             ghcr.io/tesliadiana/mywebapp:latest
+
+      - name: Verify Deployment
+        run: |
+          echo "Waiting for service to wake up..."
+          sleep 15
+          echo "Testing Application endpoint..."
+          curl --fail http://localhost:8000 || exit 1
+          echo "Testing Nginx proxy..."
+          curl --fail http://localhost:80 || exit 1
+          echo "Deployment verified successfully!"
