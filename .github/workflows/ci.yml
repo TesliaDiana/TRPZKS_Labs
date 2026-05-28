@@ -90,7 +90,7 @@ jobs:
             -t "$IMAGE_ID:latest" \
             -t "$IMAGE_ID:$SHA_TAG" .
           docker push "$IMAGE_ID:latest"
-          docker push "$SHA_TAG" || docker push "$IMAGE_ID:$SHA_TAG"
+          docker push "$IMAGE_ID:$SHA_TAG"
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_NAME=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
             docker tag "$IMAGE_ID:latest" "$IMAGE_ID:stable"
@@ -126,3 +126,4 @@ jobs:
           curl --fail http://localhost:8000 || exit 1
           curl --fail http://localhost:80 || exit 1
           echo "Success!"
+          
