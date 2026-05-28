@@ -125,15 +125,20 @@ jobs:
             ghcr.io/$OWNER_LOWER/mywebapp:latest
       - name: "Verify Deployment"
         run: |
-          echo "Waiting for service..."
-          sleep 15
-          curl --fail http://localhost:8000 || exit 1
+          echo "Waiting for service to start..."
+          sleep 20
+          docker ps -f name=mywebapp
+          echo "Testing application endpoint..."
+          curl --fail http://localhost:8000 || (docker logs mywebapp && exit 1)
+          echo "Testing nginx endpoint..."
           curl --fail http://localhost:80 || exit 1
           echo "Success!"
       - name: "Dump Logs on Failure"
         if: "failure()"
         run: |
+          echo "=== CONTAINER STATUS ==="
+          docker inspect mywebapp --format='{{.State.Status}}' || true
           echo "=== CONTAINER LOGS ==="
           docker logs mywebapp || true
-          echo "=== NGINX LOGS ==="
-          sudo tail -n 20 /var/log/nginx/error.log || true
+          echo "=== PORT CHECK ==="
+          sudo netstat -tulpn | grep :8000 || true
