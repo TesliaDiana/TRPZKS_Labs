@@ -84,13 +84,17 @@ jobs:
           docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: "Build and Push image"
         run: |
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/mywebapp
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_ID=ghcr.io/$OWNER_LOWER/mywebapp
           SHA_TAG=sha-${{ github.sha }}
+          
           docker build \
             -t "$IMAGE_ID:latest" \
             -t "$IMAGE_ID:$SHA_TAG" .
+          
           docker push "$IMAGE_ID:latest"
           docker push "$IMAGE_ID:$SHA_TAG"
+          
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_NAME=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
             docker tag "$IMAGE_ID:latest" "$IMAGE_ID:stable"
@@ -106,9 +110,10 @@ jobs:
     steps:
       - name: "Deploy Container"
         run: |
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "${{ secrets.GITHUB_TOKEN }}" | \
           docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/tesliadiana/mywebapp:latest
+          docker pull ghcr.io/$OWNER_LOWER/mywebapp:latest
           docker stop mywebapp || true
           docker rm mywebapp || true
           docker run -d --name mywebapp \
@@ -118,7 +123,7 @@ jobs:
             -e DB_USER=myuser \
             -e DB_PASSWORD=mypassword123 \
             -e DB_NAME=inventory \
-            ghcr.io/tesliadiana/mywebapp:latest
+            ghcr.io/$OWNER_LOWER/mywebapp:latest
       - name: "Verify Deployment"
         run: |
           echo "Waiting for service..."
