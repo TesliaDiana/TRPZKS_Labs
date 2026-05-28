@@ -12,11 +12,20 @@ provider "libvirt" {
 
 resource "libvirt_cloudinit_disk" "commoninit" {
   name      = "commoninit.iso"
-  user_data = data.template_file.user_data.rendered
-}
+  user_data = templatefile("${path.module}/cloud_init.cfg", {
+    ssh_key = trimspace(file("/home/teacher/.ssh/id_rsa.pub"))
+  })
 
-data "template_file" "user_data" {
-  template = file("${path.module}/cloud_init.cfg")
+  network_config = <<EOF
+version: 2
+ethernets:
+  enp1s0:
+    dhcp4: true
+  ens3:
+    dhcp4: true
+EOF
+
+  pool = "default"
 }
 
 resource "libvirt_volume" "ubuntu-qcow2" {
@@ -34,8 +43,8 @@ resource "libvirt_domain" "worker-node" {
   cloudinit = libvirt_cloudinit_disk.commoninit.id
 
   network_interface {
-    network_name = "default"
-    wait_for_lease = true
+    network_name   = "default"
+    wait_for_lease = false
   }
 
   disk {
@@ -47,8 +56,9 @@ resource "libvirt_domain" "worker-node" {
     target_port = "0"
     target_type = "serial"
   }
-}
 
-output "ip" {
-  value = libvirt_domain.worker-node.network_interface[0].addresses[0]
+  graphics {
+    type        = "vnc"
+    listen_type = "address"
+  }
 }
